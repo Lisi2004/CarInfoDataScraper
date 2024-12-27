@@ -15,6 +15,32 @@ namespace DataScraper
             _dbContext = dbContext;
         }
 
+    public async Task ExecuteRss()
+{
+    string rssFeedUrl = "https://www.veturaneshitje.com/home/rss";
+    var carUrls = await GetCarUrlsFromRssFeed(rssFeedUrl);
+
+    var cars = new List<Car>();
+    foreach (var carUrl in carUrls)
+    {
+        try
+        {
+            var car = await GetCarDetailsFromUrl(carUrl);
+            if (car != null)
+            {
+                cars.Add(car);
+            }
+        }
+        catch (Exception ex)
+        {
+           
+            Console.WriteLine($"Error processing URL {carUrl}: {ex.Message}");
+        }
+    }
+
+    await SaveCarsToDb(cars);
+}
+
 
     }
 }

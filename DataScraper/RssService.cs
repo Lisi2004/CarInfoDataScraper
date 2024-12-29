@@ -15,43 +15,66 @@ namespace DataScraper
 
         public async Task ExecuteRss()
         {
+            Console.WriteLine("Starting RSS execution...");
             string rssFeedUrl = "https://www.veturaneshitje.com/home/rss";
+
+            Console.WriteLine($"Fetching car URLs from RSS feed: {rssFeedUrl}");
             var carUrls = await GetCarUrlsFromRssFeed(rssFeedUrl);
+            Console.WriteLine($"Fetched {carUrls.Count} car URLs.");
 
             var cars = new List<Car>();
             foreach (var carUrl in carUrls)
             {
                 try
                 {
+                    Console.WriteLine($"Processing URL: {carUrl}");
                     var car = await GetCarDetailsFromUrl(carUrl);
                     if (car != null)
                     {
+                        Console.WriteLine($"Successfully retrieved details for car: {car.Title}");
                         cars.Add(car);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Failed to retrieve car details for URL: {carUrl}");
                     }
                 }
                 catch (Exception ex)
                 {
-
                     Console.WriteLine($"Error processing URL {carUrl}: {ex.Message}");
                 }
             }
 
+            Console.WriteLine("Saving car details to database...");
             await SaveCarsToDb(cars);
+            Console.WriteLine("Finished saving car details.");
         }
+
         public async Task<List<string>> GetCarUrlsFromRssFeed(string rssFeedUrl)
         {
             var carUrls = new List<string>();
-            var httpClient = new HttpClient();
-            var rssData = await httpClient.GetStringAsync(rssFeedUrl);
-
-            var rssXml = XDocument.Parse(rssData);
-            foreach (var item in rssXml.Descendants("item"))
+            try
             {
-                var link = item.Element("link")?.Value?.Trim();
-                if (!string.IsNullOrEmpty(link))
+                Console.WriteLine($"Fetching RSS data from: {rssFeedUrl}");
+                var httpClient = new HttpClient();
+                var rssData = await httpClient.GetStringAsync(rssFeedUrl);
+
+                Console.WriteLine("Parsing RSS feed...");
+                var rssXml = XDocument.Parse(rssData);
+                foreach (var item in rssXml.Descendants("item"))
                 {
-                    carUrls.Add(link);
+                    var link = item.Element("link")?.Value?.Trim();
+                    if (!string.IsNullOrEmpty(link))
+                    {
+                        carUrls.Add(link);
+                    }
                 }
+
+                Console.WriteLine($"Parsed {carUrls.Count} URLs from RSS feed.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching or parsing RSS feed: {ex.Message}");
             }
 
             return carUrls;
